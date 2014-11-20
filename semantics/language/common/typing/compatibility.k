@@ -4,7 +4,7 @@ module C-TYPING-COMPATIBILITY-SYNTAX
      syntax Int ::= getAlignas(Type) [function]
 
      syntax Bool ::= areCompatible(Type, Type) [function]
-     syntax KItem ::= compositeType(Type, Type) [function]
+     syntax Type ::= compositeType(Type, Type) [function]
 endmodule
 
 module C-TYPING-COMPATIBILITY
@@ -172,6 +172,7 @@ module C-TYPING-COMPATIBILITY
           => #areCompat(T, T') andBool #areParamsCompat(L, L')
           requires (size(L) ==Int size(L'))
                andBool sameQualifiers(Mods, Mods')
+     rule #areCompat(_:Type, _:Type) => false [owise]
 
      syntax Bool ::= #areParamsCompat(List, List) [function]
      rule #areParamsCompat(

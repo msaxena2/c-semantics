@@ -62,7 +62,8 @@ module C-SYMLOC-SYNTAX
      syntax Bool ::= sameBase(SymLoc, SymLoc) [function]
 
      syntax String ::= getTU(SymLoc) [function]
-     syntax Int ::= getThreadId(SymLoc) [function]
+     syntax ThreadId ::= getThreadId(SymLoc) [function]
+     syntax ThreadId ::= Int | "no-thread"
      syntax Int ::= getAlign(SymLoc) [function]
 
      syntax Set ::= prov(SymLoc) [function]
@@ -241,6 +242,7 @@ module C-SYMLOC
      rule getThreadId(loc(_ @ register(Th:Int), _, _)) => Th
      rule getThreadId(loc(_ @ argv, _)) => 0
      rule getThreadId(loc(_ @ argv, _, _)) => 0
+     rule getThreadId(_) => no-thread [owise]
 
      rule addProv(P:Provenance, loc(Base:SymBase, Offset:Int, Prov:Set))
           => loc(Base, Offset, Prov SetItem(P))
@@ -304,18 +306,12 @@ module C-SYMLOC
           requires (K ==K .K) orBool (getKLabel(K) =/=KLabel 'fromUnion)
      rule #hasUnionMarker(_, _) => false [owise] 
 
-     rule isFromArray(Loc:SymLoc) => true
-          requires #isFromArray(.K, Loc)
-     rule isFromArray(Loc:SymLoc) => false [owise]
+     rule isFromArray(Loc:SymLoc) => #isFromArray(Loc)
 
-     syntax Bool ::= #isFromArray(K, SymLoc) [function]
-     rule #isFromArray(fromArray(_, _), _:SymLoc) => true
-     rule #isFromArray(K:K, loc(Base:SymBase, Offset:Int, SetItem(K':K) S:Set))
-          => #isFromArray(K', loc(Base, Offset, S))
-          requires (K ==K .K) orBool (getKLabel(K) =/=KLabel 'fromArray)
-     rule #isFromArray(K:K, loc(Base:SymBase, Offset:Int, .Set))
-          => false 
-          requires (getKLabel(K) =/=KLabel 'fromArray)
+     syntax Bool ::= #isFromArray(SymLoc) [function]
+     rule #isFromArray(loc(Base:SymBase, Offset:Int, SetItem(K:K) S:Set))
+          => getKLabel(K) ==KLabel 'fromArray orBool #isFromArray(loc(Base, Offset, S))
+     rule #isFromArray(_) => false [owise]
 
      rule stripAllButFromUnion(loc(Base:SymBase, Offset:Int))
           => loc(Base, Offset)

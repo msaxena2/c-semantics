@@ -392,20 +392,18 @@ module C-IO-BUFFERED
      rule <k> setEffectiveType(loc(Base:SymBase, Offset:Int), T':Type) => .K
           ...</k>
           <mem>... Base |-> object(T:Type, _, _) ...</mem>
-          <effective-types>...
-               .Map => loc(Base, Offset) |-> T'
-          ...</effective-types>
+          <effective-types> M:Map => M [ loc(Base, Offset) <- T' ] </effective-types>
           requires isNoType(T) andBool notBool hasCharType(T':Type)
           [structural]
 
      syntax KItem ::= checkEffectiveType(Type, K) [strict(2)]
      rule checkEffectiveType(L:Type, Eff:Type) => .K
-          requires (#effectivelyCompat(L, Eff) ==K true)
+          requires (#effectivelyCompat(L, Eff))
                orBool isNoType(Eff)
           [structural]
      rule (.K => UNDEF("EIO10", "Type of lvalue not compatible with the effective type of the object being accessed.", "6.5:7"))
           ~> checkEffectiveType(L:Type, Eff:Type)
-          requires (#effectivelyCompat(L, Eff) =/=K true)
+          requires (notBool #effectivelyCompat(L, Eff))
                andBool notBool isNoType(Eff)
           [structural]
 
