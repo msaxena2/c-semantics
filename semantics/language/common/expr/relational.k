@@ -18,12 +18,16 @@ module C-COMMON-EXPR-RELATIONAL
      syntax KItem ::= makeTruth(Bool, Type, Type)
      rule makeTruth( true, T:Type, T':Type) => tv(1, t(.Set, int))
           requires notBool fromConstantExpr(T) orBool notBool fromConstantExpr(T')
+          [bool-split]
      rule makeTruth(false, T:Type, T':Type) => tv(0, t(.Set, int))
           requires notBool fromConstantExpr(T) orBool notBool fromConstantExpr(T')
+          [bool-split]
      rule makeTruth( true, T:Type, T':Type) => tv(1, t(SetItem(IntegerConstant), int))
           requires fromConstantExpr(T) andBool fromConstantExpr(T')
+          [bool-split]
      rule makeTruth(false, T:Type, T':Type) => tv(0, t(SetItem(IntegerConstant), int))
           requires fromConstantExpr(T) andBool fromConstantExpr(T')
+          [bool-split]
 
 
 

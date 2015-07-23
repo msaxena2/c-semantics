@@ -26,6 +26,11 @@ module C-STMT-LOOP
 
      rule ForClauseExpression(K:K) => Computation(K) [structural]
 
+     syntax KItem ::= loopMarked(Int)
+     rule loopMarked => loopMarked(0) [macro]
+     syntax Int ::= "bmcBound" [function]
+     rule bmcBound => 2
+
      //  fixme fishy interaction with continue i think
      rule [for-mark]:
           <k> For(ForNum:Int, Pre:K, Control:K, Post:K, S:K) ~> K:K
@@ -45,13 +50,20 @@ module C-STMT-LOOP
           [structural]
 
      rule [for]:
-          <k> loopMarked ~> For(ForNum:Int, Pre:K, Control:K, Post:K, S:K)
-               => IfThenElse(Control:K,
-                    (S:K ~> Computation(Post:K) ~> loopMarked
-                    ~> For(ForNum:Int, Pre:K, Control:K, Post:K, S:K)), Nop)
-          ...</k>
-          <block-history> ListItem(_:Int) ...</block-history>
-          [structural] // rule so that looping programs see repetition
+          loopMarked(N:Int) ~> For(ForNum:Int, Pre:K, Control:K, Post:K, S:K)
+          => IfThenElse(Control,
+               S ~> Computation(Post)
+                    ~> loopMarked(N +Int 1)
+                    ~> For(ForNum, Pre, Control, Post, S),
+               Nop)
+          requires N <Int bmcBound
+          [structural]  // rule so that looping programs see repetition
+     rule [for]:
+          loopMarked(bmcBound) ~> For(ForNum:Int, Pre:K, Control:K, Post:K, S:K)
+          => IfThenElse(Control,
+               loopMarked(bmcBound +Int 1) ~> For(ForNum, Pre, Control, Post, S),
+               Nop)
+          [structural]
 
      /*@ \fromStandard{\source[n1570]{\para{6.8.5.1}{1}}}{
      The evaluation of the controlling expression takes place before each
@@ -69,9 +81,14 @@ module C-STMT-LOOP
           <loop-stack> .List => ListItem(kpair(Num, K)) ...</loop-stack>
           [structural]
      rule [while]:
-          loopMarked ~> While(B:K, S:K)
-          => IfThenElse(B, (S ~> loopMarked ~> While(B, S)), Nop)
+          loopMarked(N:Int) ~> While(B:K, S:K)
+          => IfThenElse(B, (S ~> loopMarked(N +Int 1) ~> While(B, S)), Nop)
+          requires N <Int bmcBound
           [structural]  // rule so that looping programs see repetition
+     rule [while]:
+          loopMarked(bmcBound) ~> While(B:K, S:K)
+          => IfThenElse(B, (loopMarked(bmcBound +Int 1) ~> While(B, S)), Nop)
+          [structural]
 
      /*@ \fromStandard{\source[n1570]{\para{6.8.5.2}{1}}}{
      The evaluation of the controlling expression takes place after each
@@ -89,9 +106,14 @@ module C-STMT-LOOP
           <loop-stack> .List => ListItem(kpair(Num, K)) ...</loop-stack>
           [structural]
      rule [do-while]:
-          loopMarked ~> DoWhile(B:K, S:K)
-          => S ~> IfThenElse(B, (loopMarked ~> DoWhile(B, S)), Nop)
+          loopMarked(N:Int) ~> DoWhile(B:K, S:K)
+          => S ~> IfThenElse(B, (loopMarked(N +Int 1) ~> DoWhile(B, S)), Nop)
+          requires N <Int bmcBound
           [structural]  // rule so that looping programs see repetition
+     rule [do-while]:
+          loopMarked(bmcBound) ~> DoWhile(B:K, S:K)
+          => IfThenElse(B, (loopMarked(bmcBound +Int 1) ~> DoWhile(B, S)), Nop)
+          [structural]
 
      /*@
      \begin{lrbox}{\LstBox}
