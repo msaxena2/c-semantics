@@ -10,3 +10,13 @@ parser/cparser.ml
 parser/cparser.mli
 semantics/settings.k
 semantics/extensions.k
+
+bmc/*kompile*
+bmc/*temp*
+bmc/*.out*
+bmc/cleaner
+bmc/verification*
+
+semantics/.kompile*
+
+tmp*
