@@ -2,7 +2,7 @@
 use strict;
 use warnings;
 
-use File::Spec::Functions qw(catfile);
+use File::Spec::Functions qw(rel2abs catfile);
 use File::Temp;
 use File::Copy;
 use MIME::Base64;
@@ -24,11 +24,14 @@ $SIG{'INT'} = 'interruptHandler'; # handle control-c
 
 my $HEAP_SIZE = "EXTERN_HEAP_SIZE";
 
+my $K_HOME = $ENV{K_HOME};
+
 $ENV{K_OPTS} = "-Xms64m -Xmx$HEAP_SIZE -Xss32m -XX:+TieredCompilation";
 
 my $SCRIPTS_DIR = "EXTERN_SCRIPTS_DIR";
 
 my $EXEC_DEF = catfile($SCRIPTS_DIR, "c11-kompiled");
+my $EXEC_BMC_DEF = $ENV{BMC_DIR};
 my $EXEC_ND_DEF = catfile($SCRIPTS_DIR, "c11-nd-kompiled");
 my $EXEC_ND_THREAD_DEF = catfile($SCRIPTS_DIR, "c11-nd-thread-kompiled");
 
@@ -133,6 +136,21 @@ sub main {
             print "(with non-deterministic expression sequencing)\n";
       }
 
+
+     if (defined $ENV{BMC}) {
+            delete $krun_args{'--smt'};
+            delete $krun_args{'-w'};
+            $krun_args{'--io'} = 'off';
+            $krun_args{'--search'} = '';
+            $krun_args{'--pattern'} = '\'<k> K:K </k>\'';
+            $krun_args{'--symbolic-execution'} = '';
+            $krun_args{'-d'} = $EXEC_BMC_DEF;
+            $krun_args{'--output-file'} = "verification_result.txt";
+            $krun_args{'--smt_prelude'} = "$K_HOME/k-distribution/include/z3/basic.smt2";
+            $krun_args{'--output'} = 'pretty';
+      }
+     
+
       @options = map {"SetItem($_)"} @options;
       push @options, ".Set";
       $krun_args{'-cOPTIONS="(' . (join ' ', @options) . ')"'} = '';
@@ -226,7 +244,12 @@ sub processResult {
       local $_ = <OUT>;
       print if $verbose;
       parseResult(\%parsed);
+      
 
+      if(defined $ENV{BMC}) {
+            print "\n=========CHECK verification_results.txt============\n";
+            return 0;
+      }
       if (defined $parsed{finalComp} || defined $parsed{finalCompType} 
                   || defined $parsed{errorMsg} || !defined $parsed{exitCode}) {
             print "\n=============================================================\n";
