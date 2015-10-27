@@ -1,6 +1,8 @@
 export K_OPTS := -Xmx2048m -Xss32m
 KOMPILE = kompile --ocamlopt
 EXTENSION = cmx
+FILE=def.$(EXTENSION)
+KOMPILE_DEFAULT_FLAGS=--backend ocaml --non-strict
 
 C11_TRANSLATION_FILES = $(wildcard *.k) \
 	$(wildcard language/translation/*.k) $(wildcard language/translation/*/*.k) \
@@ -17,33 +19,33 @@ K_CLEAN_FILES = .k c11-translation-kompiled c11-kompiled c11-nd-kompiled c11-nd-
 
 default: fast
 
-c11-translation-kompiled/c11-translation-kompiled/def.$(EXTENSION): $(C11_TRANSLATION_FILES)
+c11-translation-kompiled/c11-translation-kompiled/$(FILE): $(C11_TRANSLATION_FILES)
 	@echo "Kompiling the static C semantics..."
-	$(KOMPILE) --backend ocaml --kore --non-strict --smt none c11-translation.k -d "c11-translation-kompiled" -w all -v --debug
+	$(KOMPILE) $(KOMPILE_DEFAULT_FLAGS) --kore --smt none c11-translation.k -d "c11-translation-kompiled" -w all -v --debug
 
-c11-kompiled/c11-kompiled/def.$(EXTENSION): $(C11_FILES)
+c11-kompiled/c11-kompiled/$(FILE): $(C11_FILES)
 	@echo "Kompiling the dynamic C semantics..."
-	$(KOMPILE) --backend ocaml --kore --non-strict --smt none c11.k -d "c11-kompiled" -w all -v --transition "interpRule" --debug
+	$(KOMPILE) $(KOMPILE_DEFAULT_FLAGS) --kore --smt none c11.k -d "c11-kompiled" -w all -v --transition "interpRule" --debug
 
-c11-nd-kompiled/c11-nd-kompiled/def.$(EXTENSION): $(C11_FILES)
+c11-nd-kompiled/c11-nd-kompiled/$(FILE): $(C11_FILES)
 	@echo "Kompiling the dynamic C semantics with expression sequencing non-determinism..."
-	$(KOMPILE) --backend ocaml --kore --non-strict --smt none c11.k -d "c11-nd-kompiled" --transition "observable ndtrans" --superheat "ndheat" --supercool "ndlocal"
+	$(KOMPILE) $(KOMPILE_DEFAULT_FLAGS) --kore --smt none c11.k -d "c11-nd-kompiled" --transition "observable ndtrans" --superheat "ndheat" --supercool "ndlocal"
 
-c11-nd-thread-kompiled/c11-nd-thread-kompiled/def.$(EXTENSION): $(C11_FILES)
+c11-nd-thread-kompiled/c11-nd-thread-kompiled/$(FILE): $(C11_FILES)
 	@echo "Kompiling the dynamic C semantics with thread-interleaving non-determinism..."
-	$(KOMPILE) --backend ocaml --kore --non-strict --smt none c11.k -d "c11-nd-thread-kompiled" --transition "observable ndtrans ndthread"
+	$(KOMPILE) $(KOMPILE_DEFAULT_FLAGS) --kore --smt none c11.k -d "c11-nd-thread-kompiled" --transition "observable ndtrans ndthread"
 
 all: fast nd thread
 
 fast: translation execution
 
-translation: c11-translation-kompiled/c11-translation-kompiled/def.$(EXTENSION)
+translation: c11-translation-kompiled/c11-translation-kompiled/$(FILE)
 
-execution: c11-kompiled/c11-kompiled/def.$(EXTENSION)
+execution: c11-kompiled/c11-kompiled/$(FILE)
 
-nd: c11-nd-kompiled/c11-nd-kompiled/def.$(EXTENSION)
+nd: c11-nd-kompiled/c11-nd-kompiled/$(FILE)
 
-thread: c11-nd-thread-kompiled/c11-nd-thread-kompiled/def.$(EXTENSION)
+thread: c11-nd-thread-kompiled/c11-nd-thread-kompiled/$(FILE)
 
 clean:
 	@-rm -rf $(K_CLEAN_FILES)

@@ -11,6 +11,7 @@ FAIL_TESTS_DIR = tests/unit-fail
 FAIL_COMPILE_TESTS_DIR = tests/unit-fail-compilation
 
 EXTENSION = cmx
+FILE=def.$(EXTENSION)
 
 FILES_TO_DIST = \
 	$(SCRIPTS_DIR)/kcc \
@@ -24,7 +25,7 @@ FILES_TO_DIST = \
 
 default: dist
 
-fast: $(DIST_DIR)/$(PROFILE)/lib/libc.so $(DIST_DIR)/$(PROFILE)/c11-kompiled/c11-kompiled/def.$(EXTENSION)
+fast: $(DIST_DIR)/$(PROFILE)/lib/libc.so $(DIST_DIR)/$(PROFILE)/c11-kompiled/c11-kompiled/$(FILE)
 
 check-vars:
 	@if ! ocaml -version > /dev/null 2>&1; then echo "ERROR: You don't seem to have ocaml installed.  You need to install this before continuing.  Please see INSTALL.md for more information."; false; fi
@@ -42,24 +43,24 @@ $(DIST_DIR)/kcc $(DIST_DIR)/$(PROFILE)/pp: $(FILES_TO_DIST) $(wildcard $(PROFILE
 	@cp -p $(FILES_TO_DIST) $(DIST_DIR)
 	@cp -p $(SCRIPTS_DIR)/kcc $(DIST_DIR)/kclang
 
-$(DIST_DIR)/$(PROFILE)/c11-kompiled/c11-kompiled/def.$(EXTENSION): $(DIST_DIR)/kcc $(DIST_DIR)/$(PROFILE)/pp execution-semantics
+$(DIST_DIR)/$(PROFILE)/c11-kompiled/c11-kompiled/$(FILE): $(DIST_DIR)/kcc $(DIST_DIR)/$(PROFILE)/pp execution-semantics
 	@cp -p -r $(SEMANTICS_DIR)/c11-kompiled $(DIST_DIR)/$(PROFILE)
 
-$(DIST_DIR)/$(PROFILE)/c11-translation-kompiled/c11-translation-kompiled/def.$(EXTENSION): $(DIST_DIR)/kcc $(DIST_DIR)/$(PROFILE)/pp translation-semantics
+$(DIST_DIR)/$(PROFILE)/c11-translation-kompiled/c11-translation-kompiled/$(FILE): $(DIST_DIR)/kcc $(DIST_DIR)/$(PROFILE)/pp translation-semantics
 	@cp -p -r $(SEMANTICS_DIR)/c11-translation-kompiled $(DIST_DIR)/$(PROFILE)
 
-$(DIST_DIR)/$(PROFILE)/c11-nd-kompiled/c11-nd-kompiled/def.$(EXTENSION): semantics
+$(DIST_DIR)/$(PROFILE)/c11-nd-kompiled/c11-nd-kompiled/$(FILE): semantics
 	@cp -r $(SEMANTICS_DIR)/c11-nd-kompiled $(DIST_DIR)/$(PROFILE)
 
-$(DIST_DIR)/$(PROFILE)/c11-nd-thread-kompiled/c11-nd-thread-kompiled/def.$(EXTENSION): semantics
+$(DIST_DIR)/$(PROFILE)/c11-nd-thread-kompiled/c11-nd-thread-kompiled/$(FILE): semantics
 	@cp -r $(SEMANTICS_DIR)/c11-nd-thread-kompiled $(DIST_DIR)/$(PROFILE)
 
-$(DIST_DIR)/$(PROFILE)/lib/libc.so: $(DIST_DIR)/$(PROFILE)/c11-translation-kompiled/c11-translation-kompiled/def.$(EXTENSION) $(wildcard $(PROFILE)/src/*) $(DIST_DIR)/kcc
+$(DIST_DIR)/$(PROFILE)/lib/libc.so: $(DIST_DIR)/$(PROFILE)/c11-translation-kompiled/c11-translation-kompiled/$(FILE) $(wildcard $(PROFILE)/src/*) $(DIST_DIR)/kcc
 	@echo "Translating the standard library... ($(PROFILE))"
 	$(DIST_DIR)/kcc -s -shared -o $(DIST_DIR)/$(PROFILE)/lib/libc.so $(wildcard $(PROFILE)/src/*.c) $(KCCFLAGS) -I $(PROFILE)/src/
 	@echo "Done."
 
-$(DIST_DIR): test-build $(DIST_DIR)/$(PROFILE)/c11-nd-kompiled/c11-nd-kompiled/def.$(EXTENSION) $(DIST_DIR)/$(PROFILE)/c11-nd-thread-kompiled/c11-nd-thread-kompiled/def.$(EXTENSION)
+$(DIST_DIR): test-build $(DIST_DIR)/$(PROFILE)/c11-nd-kompiled/c11-nd-kompiled/$(FILE) $(DIST_DIR)/$(PROFILE)/c11-nd-thread-kompiled/c11-nd-thread-kompiled/$(FILE)
 
 test-build: fast
 	@echo "Testing kcc..."
