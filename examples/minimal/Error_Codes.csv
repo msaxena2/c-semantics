@@ -1,4 +1,0 @@
-"Error","Description","References","Type"
-"UB-CB1","Types of function call arguments aren't compatible with declared types after promotions.","6.5.2.2:6, J.2:1 item 39","Undefined Behavior"
-"UB-CB2","Function call has fewer arguments than parameters in function definition . Function call has fewer arguments than parameters in function definition . Function call has fewer arguments than parameters in function definition .","6.5.2.2:6, J.2:1 item 38","Undefined Behavior"
-"UB-CB3","Function call has more arguments than parameters in function definition.","6.5.2.2:6, J.2:1 item 38","Undefined Behavior"
