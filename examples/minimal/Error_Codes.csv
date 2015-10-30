@@ -5,8 +5,7 @@ UB (Undefined Behavior)
 USP (Unspecified Behavior)
 CV (Constraint Violation)
 IMPL (Implementation Specific Behavior)",,,
-The Error_Code is a unique code used to identify a particular error. 
-,,,
+The Error_Code is a unique code used to identify a particular error.,,,
 ,,,
 ,,,
 Error,Description ,References,Type
