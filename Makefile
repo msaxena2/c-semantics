@@ -15,7 +15,6 @@ FILE=def.$(EXTENSION)
 
 FILES_TO_DIST = \
 	$(SCRIPTS_DIR)/kcc \
-	$(SCRIPTS_DIR)/kcc-switch \
 	$(SCRIPTS_DIR)/xml-to-k \
 	$(SCRIPTS_DIR)/program-runner \
 	$(SCRIPTS_DIR)/histogram-csv \
