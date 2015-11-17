@@ -54,7 +54,6 @@ module C-DYNAMIC-SYNTAX
      syntax BlockScope ::= blockScope(CId, Int)
      syntax PrototypeScope ::= "prototypeScope"
      syntax Scope ::= FileScope | PrototypeScope | BlockScope | "none"
-     syntax KItem ::= scope(Scope, K)
 
      //  switchid, caseid, value (tv or 'Default)
      syntax CId ::= caseLabel(Int, K)
@@ -96,7 +95,7 @@ module C-DYNAMIC-SYNTAX
 
      //TODO(liyili2): might not need this list in the future.
      syntax HeatItem ::= hItem(K)
-     context hItem(HOLE => reval(HOLE)) [ndheat, result(RValue)]
+     context hItem(HOLE:KItem => reval(HOLE)) [ndheat, result(RValue)]
      syntax HeatList ::= List{HeatItem,"hs::"} [strict]
      syntax KItem ::= hlist(HeatList) [strict]
      syntax HeatList ::= toHeatList(List) [function]
@@ -134,7 +133,7 @@ module C-DYNAMIC
      rule isKResult(.HeatList) => true
      rule isKResult(S1::HeatItem hs:: S2::HeatList) => isKResult(S1) andBool isKResult(S2)
 
-     context toRVal(HOLE => reval(HOLE)) [result(RValue)]
+     context toRVal(HOLE:KItem => reval(HOLE)) [result(RValue)]
 
      rule stripHold(te(K:K, _)) => K
      rule stripHold(le(K:K, _)) => K
@@ -207,10 +206,4 @@ module C-DYNAMIC
           => Lbl(fillLHoles(LV, L), fillLHoles(LV, R))
      rule fillLHoles(_, K:K) => K [owise]
 
-     rule <k> scope(Scope:Scope, K:K) => K ~> setScope(OldScope) ...</k>
-          <curr-scope> OldScope:Scope => Scope </curr-scope>
-
-     syntax KItem ::= setScope(Scope)
-     rule <k> setScope(Scope:Scope) => .K ...</k>
-          <curr-scope> _ => Scope </curr-scope>
 endmodule

@@ -7,7 +7,7 @@ module C-ENV-SYNTAX
      syntax KItem ::= giveType(CId, Type)
      syntax KItem ::= addEnum(CId, Int)
      syntax KItem ::= "populateFromGlobal"
-     syntax KItem ::= addToHistory(Int)
+     syntax KItem ::= scope(Scope, K)
 
 endmodule
 
@@ -17,9 +17,6 @@ module C-ENV
      imports C-TYPING-SYNTAX
 
      imports C-CONFIGURATION
-
-     rule <k> addToHistory(BlockNum:Int) => .K ...</k>
-          <block-history> .List => ListItem(BlockNum) ...</block-history>
 
      rule <k> populateFromGlobal => .K ...</k>
           <curr-tu> Tu:String </curr-tu>
@@ -85,5 +82,27 @@ module C-ENV
      syntax KItem ::= giveLocalType(K, Type)
      rule <k> giveLocalType(X:CId, T:Type) => .K ...</k>
           <types> L:Map => L[X <- T] </types>
+
+     rule <k> scope(Scope:Scope, K:K)
+              => pushLocals ~> K ~> popLocals ~> setScope(OldScope)
+          ...</k>
+          <curr-scope> OldScope:Scope => Scope </curr-scope>
+
+     syntax KItem ::= setScope(Scope)
+     rule <k> setScope(Scope:Scope) => .K ...</k>
+          <curr-scope> _ => Scope </curr-scope>
+
+     syntax KItem ::= "pushLocals" | "popLocals"
+     rule <k> pushLocals => .K ...</k>
+          <local> C:Bag <local-types> LocalTypes:Map => .Map </local-types> </local>
+          <block-stack>
+               .List => ListItem(<local> C <local-types> LocalTypes </local-types> </local>)
+          ...</block-stack>
+
+     rule <k> popLocals => .K ...</k>
+          (_:LocalCell => L)
+          <block-stack>
+               ListItem(L:LocalCell) => .List
+          ...</block-stack>
 
 endmodule

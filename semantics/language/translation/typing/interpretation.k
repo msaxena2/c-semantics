@@ -34,7 +34,7 @@ module C-TYPING-INTERPRETATION
      syntax KItem ::= makeArrayType(RValue, K)
      syntax Type ::= pushTypeDown(Type, K) [function]
 
-     context ArrayType(_, (HOLE => reval(HOLE)), _) [ndheat, result(RValue)]
+     context ArrayType(_, (HOLE:KItem => reval(HOLE)), _) [ndheat, result(RValue)]
      rule ArrayType(T:Type, tv(N:Int, T':Type), Spec:K)
           => pushTypeDown(T, makeArrayType(tv(N, T'), Spec))
           requires N >Int 0
@@ -70,8 +70,7 @@ module C-TYPING-INTERPRETATION
           [structural]
 
      // "Prototype scope."
-     rule (.K => elaborate(scope(prototypeScope,
-               Prototype'(T, L, .List, Var))))
+     rule (.K => elaborate(scope(prototypeScope, Prototype'(T, L, .List, Var))))
           ~> Prototype(T:Type, list(L:List), Var:Bool)
      rule elaborateDone(T:Type) ~> Prototype(_, _, _) => T
 
@@ -86,13 +85,8 @@ module C-TYPING-INTERPRETATION
      syntax SymBase ::= vla(CId)
      rule typedDeclaration(DT:Type, X:CId)
           ~> Prototype'(T:Type, L1:List, L2:List, Var:Bool)
-          => declareInternalVariable(X, adjustParam(DT), NoInit)
+          => declare(typedDeclaration(adjustParam(DT), X), NoInit)
           ~> Prototype'(T, L1, L2 ListItem(typedDeclaration(adjustParam(DT), X)), Var)
-          requires X =/=K #NoName
-     rule typedDeclaration(DT:Type, X:CId)
-          ~> Prototype'(T:Type, L1:List, L2:List, Var:Bool)
-          => Prototype'(T, L1, L2 ListItem(typedDeclaration(adjustParam(DT), X)), Var)
-          requires X ==K #NoName
      rule <k> Prototype'(T:Type, .List, L:List, false) => .K ...</k>
           <elab> _ => pushTypeDown(T, makeFunctionType(L)) </elab>
      rule <k> Prototype'(T:Type, .List, L:List, true) => .K ...</k>
@@ -218,7 +212,7 @@ module C-TYPING-INTERPRETATION
           => NameAndType(X, DeclType(T, BitFieldType(K, Size)))
           [structural]
 
-     context Typedef(NameGroup(HOLE, _))
+     context Typedef(NameGroup(HOLE:KItem, _))
 
      rule Typedef(NameGroup(T:Type, list(ListItem(K:K) L:List)))
           => defineType(SingleName(T, K)) ~> Typedef(NameGroup(T, list(L)))

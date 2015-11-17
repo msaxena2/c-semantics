@@ -422,41 +422,6 @@ module C-TYPING-MISC
           requires (Offset =/=Int 0)
                andBool (FOffset <=Int Offset)
 
-     syntax List ::= elideParams(List) [function]
-     rule elideDeclParams(typedDeclaration(T:Type, X:CId))
-          => typedDeclaration(elideDeclParams(T), X)
-     rule elideDeclParams(t(Mods:Set, functionType(R:Type, Params:List)))
-          => t(Mods, functionType(elideDeclParams(R), elideParams(Params)))
-     rule elideDeclParams(t(Mods:Set, arrayType(T:Type, N:Int)))
-          => t(Mods, arrayType(elideDeclParams(T), N))
-     rule elideDeclParams(t(Mods:Set, incompleteArrayType(T:Type)))
-          => t(Mods, incompleteArrayType(elideDeclParams(T)))
-     rule elideDeclParams(t(Mods:Set, flexibleArrayType(T:Type)))
-          => t(Mods, flexibleArrayType(elideDeclParams(T)))
-     rule elideDeclParams(t(Mods:Set, variableLengthArrayType(T:Type, N:K)))
-          => t(Mods, variableLengthArrayType(elideDeclParams(T), N))
-     rule elideDeclParams(t(Mods:Set, pointerType(T:Type)))
-          => t(Mods, pointerType(elideDeclParams(T)))
-     rule elideDeclParams(T:Type) => T
-          requires notBool isTypedDeclaration(T)
-               andBool notBool isArrayOrFunctionType(T)
-               andBool notBool isPointerType(T)
-
-     rule elideParams(ListItem(typedDeclaration(T:Type, _)) Params:List)
-          => ListItem(elideDeclParams(T)) elideParams(Params)
-     rule elideParams(ListItem(variadic)) => ListItem(variadic)
-     rule elideParams(ListItem(t(Mods:Set, T:SimpleType)) Params:List)
-          => ListItem(elideDeclParams(t(Mods, T))) elideParams(Params)
-     rule elideParams(.List) => .List
-
-     rule elideList(ListItem(T:Type) L:List)
-          => ListItem(elideDeclParams(T)) elideList(L)
-     rule elideList(.List) => .List
-
-     rule elideMap(K:K |-> T:Type M:Map)
-          => K |-> elideDeclParams(T) elideMap(M)
-     rule elideMap(.Map) => .Map
-
      // TODO(chathhorn): move/refactor?
      rule <k> (.K => stabilize(T)) ~> stabilizeVLA(T:Type) ...</k>
           <curr-scope> S:Scope </curr-scope>
@@ -477,7 +442,7 @@ module C-TYPING-MISC
      // allowed to have VM types (see 6.7.2.1p9).
      syntax KItem ::= stabilize(K)
 
-     context stabilize(t(_, variableLengthArrayType(_, (HOLE => reval(HOLE)))))
+     context stabilize(t(_, variableLengthArrayType(_, (HOLE:KItem => reval(HOLE)))))
           [result(RValue)]
 
      rule (.K => stabilize(T)) ~> stabilize(t(_, arrayType(T:Type, _)))

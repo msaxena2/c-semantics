@@ -1,5 +1,5 @@
 File: CV-FD1-bad-static.c
-Line: 1
+Line: 3
 Error: CV-FD1
 Description: duplicate parameters in function definition.
 Type: Constraint violation.

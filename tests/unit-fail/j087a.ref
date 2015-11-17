@@ -1,8 +1,9 @@
-Error: UB-EIO10
-Description: Type of lvalue not compatible with the effective type of the object being accessed.
+Error: UB-STDARG1
+Description: 'va_start' used in function with fixed args.
 Type: Undefined behavior.
-See also: C11 sec. 6.5:7, J.2:1 item 37
-  at f(j087a.c:6)
-  at main(j087a.c:11)
+See also: C11 sec. 6.9.1:8, J.2:1 item 87
+  at __va_start(j087a.c:5)
+  at f(j087a.c:5)
+  at main(j087a.c:9)
   at <file-scope>(<unknown>)
 Execution failed (configuration dumped)
