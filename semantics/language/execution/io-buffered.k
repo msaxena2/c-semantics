@@ -31,7 +31,7 @@ module C-IO-BUFFERED
 
      syntax KItem ::=  writeBytes(SymLoc, List)
      rule <k> writeBytes(Loc::SymLoc, dataList(Bytes::List), T::Type)
-               => checkWrite(Loc, T)
+               => checkWrite(Loc, T, size(Bytes))
                ~> setEffectiveType(Loc, T)
                ~> setModified(Loc, T)
                ~> writeBytes(Loc, Bytes)
@@ -67,8 +67,8 @@ module C-IO-BUFFERED
      rule writeBytes(_, .List) => .K
           [structural]
 
-     syntax KItem ::= checkWrite(SymLoc, Type)
-     rule <k> checkWrite(loc(Base::SymBase, Offset::Int), T::Type) => .K ...</k>
+     syntax KItem ::= checkWrite(SymLoc, Type, Int)
+     rule <k> checkWrite(loc(Base::SymBase, Offset::Int), T::Type, Size::Int) => .K ...</k>
           <thread-id> ThreadId::Int </thread-id>
           <mem>... Base |-> object(ObjT::Type, Len::Int, _, _) ...</mem>
           <locs-written>
@@ -77,7 +77,8 @@ module C-IO-BUFFERED
           requires // Sequencing.
                (notBool loc(Base, Offset) in Locs)
                // Bounds.
-               andBool (Offset <Int Len)
+               andBool (Offset +Int Size -Int 1 <Int Len)
+               andBool Offset >=Int 0
                // Const.
                andBool (notBool (Const in getQualsAtOffset(ObjT, Offset)))
                // Volatile.
@@ -88,7 +89,7 @@ module C-IO-BUFFERED
                          orBool isAutoDuration(loc(Base, Offset)))
                     andBool (ThreadId =/=K getThreadId(loc(Base, Offset))))
           [structural]
-     rule <k> checkWrite(Loc::SymLoc, _) => .K ...</k>
+     rule <k> checkWrite(Loc::SymLoc, _, _) => .K ...</k>
           <locs-written>
                Locs::List (.List => ListItem(Loc))
           </locs-written>
@@ -96,7 +97,7 @@ module C-IO-BUFFERED
      rule <k> (.K => UNDEF("EIO8",
                "Unsequenced side effect on scalar object with side effect of same object.",
                "6.5:2, J.2:1 item 35") )
-               ~> checkWrite(Loc::SymLoc, _)
+               ~> checkWrite(Loc::SymLoc, _, _)
           ...</k>
           <locs-written> Locs::List </locs-written>
           requires Loc in Locs::List
@@ -105,20 +106,18 @@ module C-IO-BUFFERED
      rule <k> (.K => UNDEF("EIO2",
                "Trying to write outside the bounds of an object.",
                "6.5.6:8, J.2:1 item 47"))
-               ~> checkWrite(loc(Base::SymBase, Offset::Int), _)
+               ~> checkWrite(loc(Base::SymBase, Offset::Int), _, Size::Int)
           ...</k>
           <mem>... Base |-> object(_, Len::Int, _, _) ...</mem>
-          requires Offset >=Int Len orBool Offset <Int 0
+          requires Offset +Int Size -Int 1 >=Int Len orBool Offset <Int 0
           [structural]
      // if there is an undefined behavior associated with the write, we just eat it
      // this is somewhat less safe than some of our other error recovery options,
      // but all error recovery is essentially unsound anyway, so it should be fine
-     rule _:ErrorExit ~> checkWrite(_, _) ~> setEffectiveType(_, _) ~> setModified(_, _) ~> writeBytes(_, _) => .K
-          requires isErrorRecovery
      rule <k> (.K => UNDEF("EIO3",
                "Trying to modify an object declared with const type.",
                "6.7.3:6, J.2:1 item 64"))
-               ~> checkWrite(loc(Base::SymBase, Offset::Int), _)
+               ~> checkWrite(loc(Base::SymBase, Offset::Int), _, _)
           ...</k>
           <mem>... Base |-> object(ObjT::Type, _, _, _) ...</mem>
           requires (Const in getQualsAtOffset(ObjT, Offset))
@@ -126,7 +125,7 @@ module C-IO-BUFFERED
      rule <k> (.K => UNDEF("EIO4",
                "Trying to modify an object declared with volatile type through a non-volatile lvalue.",
                "6.7.3:6, J.2:1 item 65"))
-               ~> checkWrite(loc(Base::SymBase, Offset::Int), T::Type)
+               ~> checkWrite(loc(Base::SymBase, Offset::Int), T::Type, _)
           ...</k>
           <mem>... Base |-> object(ObjT::Type, _, _, _) ...</mem>
           requires notBool isVolatileType(T)
@@ -135,7 +134,7 @@ module C-IO-BUFFERED
      rule <k> (.K => IMPL("EIO5",
                "Trying to modify an object with thread or auto storage duration in a thread other than the one in which the object is associated.",
                "6.2.4:4, 6.2.4:5, J.3.13:1 item 2"))
-               ~> checkWrite(Loc::SymLoc, _)
+               ~> checkWrite(Loc::SymLoc, _, _)
           ...</k>
           <thread-id> ThreadId::Int </thread-id>
           requires (isThreadDuration(Loc) orBool isAutoDuration(Loc))
@@ -181,12 +180,6 @@ module C-IO-BUFFERED
           requires (isThreadDuration(Loc) orBool isAutoDuration(Loc))
                andBool (ThreadId =/=K getThreadId(Loc))
           [structural]
-     rule <k> _:ErrorExit ~> readBytes(Loc::SymLoc, Size::Int, T::Type)
-               => checkEffectiveType(T, getEffectiveType(Loc))
-               ~> readBytes-aux(Loc, Size, .List, T)
-          ...</k>
-          <thread-id> ThreadId::Int </thread-id>
-          requires isErrorRecovery
 
      // loc, size in bytes, aux list
      syntax KItem ::= "readBytes-aux" "(" SymLoc "," Int "," List "," Type ")"
@@ -333,18 +326,18 @@ module C-IO-BUFFERED
 //             //[interpRule]
 
      rule (.K => UNDEF("EIO7",
-               "reading outside the bounds of an object.",
+               "Reading outside the bounds of an object.",
                "6.3.2.1:1, J.2:1 item 19"))
           ~> errorReadOutOfBounds
           [structural]
      // read outo f bounds becomes a trap by the above rule
      rule (.K => UNDEF("EIO8",
-               "unsequenced side effect on scalar object with value computation of same object.",
+               "Unsequenced side effect on scalar object with value computation of same object.",
                "6.5:2, J.2:1 item 35"))
           ~> errorUnseqEffects
           [structural]
      rule (.K => UNDEF("EIO9",
-               "trying to access an object declared with volatile type through a non-volatile lvalue.",
+               "Trying to access an object declared with volatile type through a non-volatile lvalue.",
                "6.7.3:6, J.2:1 item 65"))
           ~> errorNonVolatileLVal
           [structural]
@@ -449,8 +442,6 @@ module C-IO-BUFFERED
           requires (notBool #effectivelyCompat(L, Eff))
                andBool notBool isNoType(Eff)
           [structural]
-     rule _:ErrorExit ~> checkEffectiveType(_, _) => .K
-          requires isErrorRecovery
 
      // An  object shall have its stored value accessed only by an lvalue
      // expression that has one of the following types:

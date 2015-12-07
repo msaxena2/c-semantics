@@ -97,24 +97,19 @@ module C-DECL-INITIALIZER
           [structural]
 
      rule (.K => UNDEF("CDI1",
-               "Initializer for scalar contains multiple expressions", "6.7.9:11, J.2:1 item 81"))
+               "Initializer for scalar contains multiple expressions.", "6.7.9:11, J.2:1 item 81"))
           ~> figureInit(_, T:Type, CompoundInit(list(L:List)))
           requires notBool isAggregateOrUnionType(T)
                andBool size(L) >Int 1
-     rule (_:ErrorExit => .K) ~> figureInit(_, T:Type, CompoundInit(list(ListItem(_) (L:List => .List))))
-          requires notBool isAggregateOrUnionType(T)
-               andBool isErrorRecovery andBool size(L) >Int 0
 
      rule (.K => UNDEF("CDI2",
-               "Initializer for scalar contains multiple levels of braces", "6.7.9:11, J.2:1 item 81"))
+               "Initializer for scalar contains multiple levels of braces.", "6.7.9:11, J.2:1 item 81"))
           ~> figureInit(_, T:Type,
                CompoundInit(list(ListItem(InitFragment(NextInit, CompoundInit(_))))))
           requires notBool isAggregateOrUnionType(T)
-     rule (_:ErrorExit => .K) ~> figureInit(_, T:Type, (CompoundInit(list(ListItem(InitFragment(NextInit, CompoundInit(L:K))))) => CompoundInit(L)))
-          requires notBool isAggregateOrUnionType(T) andBool isErrorRecovery
 
      rule (.K => UNDEF("CDI3",
-               "Invalid initializer for aggregate type", "6.7.9:16, J.2:1 item 83"))
+               "Invalid initializer for aggregate type.", "6.7.9:16, J.2:1 item 83"))
           ~> figureInit(_, t(_, incompleteArrayType(T:Type)), SingleInit(K:K))
           requires notBool isWCharType(T) orBool getKLabel(K) =/=K #klabel(`wstringLiteral`)
 
@@ -388,15 +383,15 @@ module C-DECL-INITIALIZER
      rule getTopArrayUse((K:K[[N:Int]])[[_]]) => getTopArrayUse(K[[N]])
      rule getTopArrayUse((K:K . _:CId)[[_]]) => getTopArrayUse(K)
 
-     syntax KItem ::= initializeSingleInit(K)
+     syntax KItem ::= initializeSingleInit(K) [strict]
 
-     rule (.K => typeof(K)) ~> initializeSingleInit(K:K)
+     rule (.K => typeof(K)) ~> initializeSingleInit(K:KResult)
           [structural]
      rule (typeof(T:Type) => T) ~> initializeSingleInit(_)
           [structural]
 
      // fixme want to exclude strings, but not normal arrays
-     rule <k> T':Type ~> initializeSingleInit(K':K) => .K ...</k>
+     rule <k> T':Type ~> initializeSingleInit(K':KResult) => .K ...</k>
           <curr-subobject>
                (.List => ListItem(next)) ListItem(ncle(K:K, T:Type))
           ...</curr-subobject>
@@ -415,7 +410,7 @@ module C-DECL-INITIALIZER
      // this is used to have an aggregate on the RHS of a compound init
      // fixme want to exclude strings, but not normal arrays
      syntax KItem ::= initFromAggregateRHS(K, Type)
-     rule T:StructOrUnionType ~> initializeSingleInit(K:K)
+     rule T:StructOrUnionType ~> initializeSingleInit(K:KResult)
           => initFromAggregateRHS(K, T)
           [structural]
 

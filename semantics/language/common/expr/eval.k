@@ -3,6 +3,7 @@ module C-COMMON-EXPR-EVAL-SYNTAX
 
      syntax KItem ::= instantiate(SymLoc, Type)
      syntax KItem ::= checkUse(K) [strict]
+     syntax KItem ::= checkLoc(SymLoc)
      syntax Type ::= arrayToPtrType(Type) [function]
 endmodule
 
@@ -49,8 +50,6 @@ module C-COMMON-EXPR-EVAL
      rule (.K => UNDEF("CEE3", "Trying to convert an incomplete lvalue not of array type.", "6.3.2.1:2"))
           ~> checkCompleteLValue(T:Type)
           requires notBool isCompleteType(T)
-     rule _:ErrorExit ~> checkCompleteLValue(_) => .K
-          requires isErrorRecovery
 
      // Lvalue conversion.
      rule reval(nclv(Loc::SymLoc, T::Type)
@@ -86,15 +85,19 @@ module C-COMMON-EXPR-EVAL
           => stripQualifiers(t(getModifiers(T), pointerType(innerType(T))))
 
      syntax SymLoc ::= arrayToPtrLoc(SymLoc, Type) [function]
-     rule arrayToPtrLoc(Loc::SymLoc, T::Type)
+     rule arrayToPtrLoc(Loc::SymLoc, T:FixedLengthArrayType)
           => addProv(basedOn(base(Loc), getRestrictBlock(T)),
              addProv(fromArray(0, byteSizeofType(innerType(T)) *Int arrayLength(T)),
              Loc))
           requires isRestrictType(T)
      rule arrayToPtrLoc(Loc::SymLoc, T::Type)
+          => addProv(basedOn(base(Loc), getRestrictBlock(T)), Loc)
+          requires isRestrictType(T) andBool notBool isFixedLengthArrayType(T)
+     rule arrayToPtrLoc(Loc::SymLoc, T:FixedLengthArrayType)
           => addProv(fromArray(0, byteSizeofType(innerType(T)) *Int arrayLength(T)),
              Loc)
           requires notBool isRestrictType(T)
+     rule arrayToPtrLoc(Loc::SymLoc, _) => Loc [owise]
 
      /*@ \fromStandard{\source[n1570]{\para{6.3.2.1}{4}}}{
      A function designator is an expression that has function type. Except
@@ -113,12 +116,6 @@ module C-COMMON-EXPR-EVAL
                     "6.2.4, 6.7.9, 6.8, J.2:1 item 11")
                ~> tv(trap, T))
           [structural]
-     rule _:ErrorExit ~> tv(trap, T:IntegerType) ~> reval() => tv(0, T) ~> reval()
-          requires isErrorRecovery
-     rule _:ErrorExit ~> tv(trap, T:FloatType) ~> reval() => tv(0.0, T) ~> reval()
-          requires isErrorRecovery
-     rule _:ErrorExit ~> tv(trap, T:PointerType) ~> reval() => tv(NullPointer, T) ~> reval()
-          requires isErrorRecovery
 
      syntax KItem ::= checkRegister(SymLoc)
      rule <k> checkRegister(_) => .K ...</k>
@@ -136,8 +133,6 @@ module C-COMMON-EXPR-EVAL
           <initializing> false </initializing>
           requires isRegisterLoc(Loc)
           [structural]
-     rule _:ErrorExit ~> checkRegister(_) => .K
-          requires isErrorRecovery
 
      rule checkUse(V:KResult) => V
           requires getKLabel(V) =/=K #klabel(`tv`)
@@ -150,7 +145,6 @@ module C-COMMON-EXPR-EVAL
      rule checkUse(tv(V:SymLoc, T::Type)) => checkLoc(V) ~> tv(V, T)
           [structural]
 
-     syntax KItem ::= checkLoc(SymLoc)
      rule checkLoc(Loc::SymLoc) => checkLoc'(stripProv(Loc))
           [structural]
 

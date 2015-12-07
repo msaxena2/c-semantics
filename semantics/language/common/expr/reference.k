@@ -67,6 +67,7 @@ module C-COMMON-EXPR-REFERENCE
      }*/
      rule *(tv(Loc:SymLoc, T:PointerType))
           => checkRestrict(Loc)
+          ~> checkLoc(Loc)
           ~> lv(stripBases(stripFromArray(Loc)), innerType(T))
           requires notBool isVoidType(innerType(T))
                andBool Loc =/=K NullPointer
@@ -86,11 +87,6 @@ module C-COMMON-EXPR-REFERENCE
           requires ifFromArrayInBounds(Loc,
                t(.Set, pointerType(t(.Set, char))), 1) =/=K true
           [structural]
-     rule _:ErrorExit ~> *(tv(Loc:SymLoc, T:PointerType))
-          => lv(stripBases(stripFromArray(Loc)), innerType(T))
-          requires ifFromArrayInBounds(Loc,
-               t(.Set, pointerType(t(.Set, char))), 1) =/=K true
-               andBool isErrorRecovery
 
 endmodule
 

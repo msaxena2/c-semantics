@@ -32,12 +32,10 @@ module C-EXPR-CONDITIONAL
           ~> _? _ : _
           requires areCompatible(stripQualifiers(T), stripQualifiers(T'))
           [structural]
-     rule (.K => UNDEF("EEC1", "Incompatible variably modified types in a conditional expression.", "6.7.6.1:6"))
+     rule (.K => UNDEF("EEC1", "variably modified types in a conditional expression with unequal size expressions.", "6.7.6.1:6"))
           ~> types(T1:PointerType, T2:PointerType)
           requires notBool areCompatible(stripQualifiers(innerType(T1)), stripQualifiers(innerType(T2)))
           [structural]
-     rule _:ErrorExit ~> types(T1:PointerType, _) => convertedType(T1)
-          requires isErrorRecovery
 
      syntax KItem ::= convertedType(Type)
      rule convertedType(T:Type) ~> tv(1, t(_, int)) ? E1:K : _

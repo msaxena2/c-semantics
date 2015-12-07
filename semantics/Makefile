@@ -3,6 +3,7 @@ KOMPILE = kompile --ocamlopt
 EXTENSION = cmx
 FILE=def.$(EXTENSION)
 KOMPILE_DEFAULT_FLAGS=--backend ocaml --non-strict
+KDEP = kdep
 
 C11_TRANSLATION_FILES = $(wildcard *.k) \
 	$(wildcard language/translation/*.k) $(wildcard language/translation/*/*.k) \
@@ -13,40 +14,51 @@ C11_FILES = $(wildcard *.k) \
 	$(wildcard language/common/*.k) $(wildcard language/common/*/*.k) \
 	$(wildcard library/*.k)
 
-K_CLEAN_FILES = .k c11-translation-kompiled c11-kompiled c11-nd-kompiled c11-nd-thread-kompiled
-
-.PHONY: default all fast nd thread clean
+.PHONY: default all fast nd thread clean .depend-translation .depend-execution .depend-nd .depend-nd-thread
 
 default: fast
 
-c11-translation-kompiled/c11-translation-kompiled/$(FILE): $(C11_TRANSLATION_FILES)
+$(PROFILE)/c11-translation-kompiled/c11-translation-kompiled/timestamp:
 	@echo "Kompiling the static C semantics..."
-	$(KOMPILE) $(KOMPILE_DEFAULT_FLAGS) --smt none c11-translation.k -d "c11-translation-kompiled" -w all -v --debug
+	$(KOMPILE) --backend ocaml --non-strict --smt none c11-translation.k -d "$(PROFILE)/c11-translation-kompiled" -w all -v --debug -I $(PROFILE_DIR)/semantics
 
-c11-kompiled/c11-kompiled/$(FILE): $(C11_FILES)
+$(PROFILE)/c11-kompiled/c11-kompiled/timestamp:
 	@echo "Kompiling the dynamic C semantics..."
-	$(KOMPILE) $(KOMPILE_DEFAULT_FLAGS) --kore --smt none c11.k -d "c11-kompiled" -w all -v --transition "interpRule" --debug
+	$(KOMPILE) --backend ocaml --non-strict --smt none c11.k -d "$(PROFILE)/c11-kompiled" -w all -v --transition "interpRule" --debug -I $(PROFILE_DIR)/semantics
 
-c11-nd-kompiled/c11-nd-kompiled/$(FILE): $(C11_FILES)
+$(PROFILE)/c11-nd-kompiled/c11-nd-kompiled/timestamp:
 	@echo "Kompiling the dynamic C semantics with expression sequencing non-determinism..."
-	$(KOMPILE) $(KOMPILE_DEFAULT_FLAGS) --kore --smt none c11.k -d "c11-nd-kompiled" --transition "observable ndtrans" --superheat "ndheat" --supercool "ndlocal"
+	$(KOMPILE) --backend ocaml --non-strict --smt none c11.k -d "$(PROFILE)/c11-nd-kompiled" --transition "observable ndtrans" --superheat "ndheat" --supercool "ndlocal" -I $(PROFILE_DIR)/semantics
 
-c11-nd-thread-kompiled/c11-nd-thread-kompiled/$(FILE): $(C11_FILES)
+$(PROFILE)/c11-nd-thread-kompiled/c11-nd-thread-kompiled/timestamp:
 	@echo "Kompiling the dynamic C semantics with thread-interleaving non-determinism..."
-	$(KOMPILE) $(KOMPILE_DEFAULT_FLAGS) --kore --smt none c11.k -d "c11-nd-thread-kompiled" --transition "observable ndtrans ndthread"
+	$(KOMPILE) --backend ocaml --non-strict --smt none c11.k -d "$(PROFILE)/c11-nd-thread-kompiled" --transition "observable ndtrans ndthread" -I $(PROFILE_DIR)/semantics
 
 all: fast nd thread
 
 fast: translation execution
 
-translation: c11-translation-kompiled/c11-translation-kompiled/$(FILE)
+translation: c11-translation-kompiled/c11-translation-kompiled/timestamp/$(FILE)
 
-execution: c11-kompiled/c11-kompiled/$(FILE)
+execution: c11-kompiled/c11-kompiled/timestamp$(FILE)
 
-nd: c11-nd-kompiled/c11-nd-kompiled/$(FILE)
+nd: c11-nd-kompiled/c11-nd-kompiled/timestamp$(FILE)
 
-thread: c11-nd-thread-kompiled/c11-nd-thread-kompiled/$(FILE)
+thread: c11-nd-thread-kompiled/c11-nd-thread-kompiled/timestamp$(FILE)
 
 clean:
-	@-rm -rf $(K_CLEAN_FILES)
+	@-rm -rf */c11-translation-kompiled */c11-kompiled */c11-nd-kompiled */c11-nd-thread-kompiled
 
+.depend-translation:
+	$(KDEP) -d "$(PROFILE)/c11-translation-kompiled" -I $(PROFILE_DIR)/semantics -- c11-translation.k > .depend-translation
+.depend-execution:
+	$(KDEP) -d "$(PROFILE)/c11-kompiled" -I $(PROFILE_DIR)/semantics -- c11.k > .depend-execution
+.depend-nd:
+	$(KDEP) -d "$(PROFILE)/c11-nd-kompiled" -I $(PROFILE_DIR)/semantics -- c11.k > .depend-nd
+.depend-nd-thread:
+	$(KDEP) -d "$(PROFILE)/c11-nd-thread-kompiled" -I $(PROFILE_DIR)/semantics -- c11.k > .depend-nd-thread
+
+include .depend-translation
+include .depend-execution
+include .depend-nd
+include .depend-nd-thread

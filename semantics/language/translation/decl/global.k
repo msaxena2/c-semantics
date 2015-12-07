@@ -107,20 +107,19 @@ module C-DECL-GLOBAL
           <curr-program-loc> L:CabsLoc </curr-program-loc>
           requires notBool isFunctionType(T)
                andBool validGlobalStorageClass(T)
+               andBool notBool isVariablyModifiedType(T)
           [structural]
 
      rule (.K => UNDEF("TDG1",
-               "declaration for the function " +String idToString(X) +String
+               "Declaration for the function " +String idToString(X) +String
                " appears with type qualifiers.",
                "6.7.3:9, J.2:1 item 66"))
           ~> declare''(T:FunctionType, X:CId, _)
           requires getQualifiers(T) =/=K .Set
           [structural]
-     rule (_:ErrorExit => .K) ~> declare''((T:FunctionType => stripQualifiers(T)), _, _)
-          requires getQualifiers(T) =/=K .Set andBool isErrorRecovery
 
      rule (.K => CV("TDG2",
-               "declaration for " +String idToString(X) +String
+               "Declaration for " +String idToString(X) +String
                " appears with multiple storage class specifiers.",
                "6.7.1:2"))
           ~> declare''(T:Type, X:CId, _)
@@ -128,7 +127,7 @@ module C-DECL-GLOBAL
           [structural]
 
      rule <k> (.K => UNDEF("TDG3",
-               "declaration for " +String idToString(X) +String
+               "Declaration for " +String idToString(X) +String
                " appears with invalid storage class specifiers.",
                "6.7.1:7, J.2:1 item 60"))
                ~> declare''(T:FunctionType, X:CId, _)
@@ -138,11 +137,9 @@ module C-DECL-GLOBAL
                andBool validStorageClass(T)
                andBool notBool validLocalStorageClass(T)
           [structural]
-     rule (_:ErrorExit => .K) ~> declare''((T:Type => stripStorageSpecifiers(T)), _, _)
-          requires notBool validLocalStorageClass(T) andBool isErrorRecovery
 
      rule <k> (.K => CV("TDG18",
-               "declaration for " +String idToString(X) +String
+               "Declaration for " +String idToString(X) +String
                " appears with invalid storage class specifiers.",
                "6.7.1:3"))
                ~> declare''(T:Type, X:CId, _)
@@ -155,7 +152,7 @@ module C-DECL-GLOBAL
           [structural]
 
      rule <k> (.K => CV("TDG4",
-               "declaration for " +String idToString(X) +String
+               "Declaration for " +String idToString(X) +String
                " appears with invalid storage class specifiers.",
                "6.9:2"))
                ~> declare''(T:Type, X:CId, _)
@@ -166,7 +163,7 @@ module C-DECL-GLOBAL
           [structural]
 
      rule <k> (.K => CV("TDG5",
-               "function parameter appears with storage class other than register.",
+               "Function parameter appears with storage class other than register.",
                "6.7.6.3:2"))
                ~> declare''(T:Type, _, _)
           ...</k>
@@ -175,7 +172,7 @@ module C-DECL-GLOBAL
                andBool notBool isVoidType(T)
           [structural]
      rule <k> (.K => UNDEF("TDG6",
-               "void parameter appears with a storage class specifier.",
+               "Void parameter appears with a storage class specifier.",
                "6.7.6.3:10, J.2:1 item 78"))
                ~> declare''(T:VoidType, _, _)
           ...</k>
@@ -183,23 +180,20 @@ module C-DECL-GLOBAL
           requires getStorageSpecifiers(T) =/=K .Set
           [structural]
      rule <k> (.K => UNDEF("TDG7",
-               "void parameter appears with qualifiers.",
+               "Void parameter appears with qualifiers.",
                "6.7.6.3:10, J.2:1 item 78"))
                ~> declare''(T:VoidType, _, _)
           ...</k>
           <curr-scope> prototypeScope </curr-scope>
           requires getQualifiers(T) =/=K .Set
           [structural]
-     rule <k> _:ErrorExit ~> declare''(T:Type, X:CId, K:K)
-               => declare''(stripStorageSpecifiers(T), X, K)
-          ...</k>
-          <curr-scope> prototypeScope </curr-scope>
-          requires isErrorRecovery andBool notBool isVoidType(T)
-     rule <k> _:ErrorExit ~> declare''(T:VoidType, X:CId, K:K)
-               => declare''(stripQualifiers(stripStorageSpecifiers(T)), X, K)
-          ...</k>
-          <curr-scope> prototypeScope </curr-scope>
-          requires isErrorRecovery
+
+     rule (.K => CV("TDG9",
+          "file-scope declaration of " +String idToString(X)
+          +String " with a variably-modified type.",
+          "6.7.6.2:2"))
+          ~> declare''(T:Type, X:CId, _)
+          requires notBool isFunctionType(T) andBool isVariablyModifiedType(T)
 
      // Checks if the type is complete if there's an initializer.
      syntax KItem ::= checkComplete(Type, K)
@@ -209,7 +203,7 @@ module C-DECL-GLOBAL
           requires isCompleteType(T) orBool isArrayType(T)
           [structural]
      rule (.K => CV("TDG8",
-               "declaration has initializer but incomplete type.",
+               "Declaration has initializer but incomplete type.",
                "6.7.9:3"))
           ~> checkComplete(T:Type, K:K)
           requires notBool isNoInit(K)
@@ -336,7 +330,7 @@ module C-DECL-GLOBAL
           [structural]
 
      rule <k> (.K => CV("TDG10",
-               "conflicting types for " +String idToString(X), "6.7:4"))
+               "Conflicting types for " +String idToString(X) +String ".", "6.7:4"))
                ~> declareExternalVariable(X:CId, T:Type, _)
           ...</k>
           <curr-tu> Tu:String </curr-tu>
@@ -386,7 +380,7 @@ module C-DECL-GLOBAL
           [structural]
 
      rule <k> (.K => CV("TDG10",
-               "conflicting types for " +String idToString(X), "6.7:4"))
+               "Conflicting types for " +String idToString(X) +String ".", "6.7:4"))
                ~> declareExternalVariable(X:CId, T:Type, _)
           ...</k>
           <curr-tu> Tu:String </curr-tu>
@@ -440,7 +434,7 @@ module C-DECL-GLOBAL
 
      // Static, previously extern.
      rule <k> (.K => UNDEF("TDG11",
-               "static declaration of " +String idToString(X)
+               "Static declaration of " +String idToString(X)
                +String " follows non-static declaration.", "6.2.2:7, J.2:1 item 8"))
                ~> declareExternalVariable(X:CId, T:Type, _)
           ...</k>
@@ -450,14 +444,6 @@ module C-DECL-GLOBAL
           requires isStaticType(T)
                andBool (X in_keys(Exts))
           [structural]
-
-     // eat the declaration
-     rule <k> _:ErrorExit ~> declareExternalVariable(X:CId, T:Type, _) => .K ...</k>
-          <curr-tu> Tu:String </curr-tu>
-          <tu-id> Tu </tu-id>
-          <externals> Exts:Map </externals>
-          requires isStaticType(T)
-               andBool (X in_keys(Exts)) andBool isErrorRecovery
 
      // Now we just need to handle allocation, initialization, and updating the
      // declState, when necessary. The last argument can be thought of as the
@@ -490,15 +476,12 @@ module C-DECL-GLOBAL
                     orBool (Sto ==K Static andBool Lnk =/=K internal))
           [structural]
      rule ( .K => UNDEF("TDG12",
-               "declaration for an object is a tentative definition with internal linkage and has an incomplete type.",
+               "Declaration for an object is a tentative definition with internal linkage and has an incomplete type.",
                "6.9.2:3, J.2:1 item 89"))
           ~> declareExternalVariable'(true, initValue(_, T:Type, .K),
                _, internal, _)
           requires notBool isCompleteType(T)
           [structural]
-     rule _:ErrorExit ~> declareExternalVariable'(true, initValue(_, T:Type, .K),
-               _, internal, _) => .K
-          requires notBool isCompleteType(T) andBool isErrorRecovery
 
      // *** Extern, already completed.  ***
 
@@ -591,7 +574,7 @@ module C-DECL-GLOBAL
 
      // already initialized
      rule (.K => CV("TDG13", "Redefinition of symbol: "
-               +String idToString(X), "6.9:3"))
+               +String idToString(X) +String ".", "6.9:3"))
           ~> declareExternalVariable'(false, initValue(X:CId, _, _),
                initialized, _, _)
           [structural]
@@ -665,7 +648,7 @@ module C-DECL-GLOBAL
           [structural]
 
      rule <k> (.K => CV("TDG13",
-               "Redefinition of symbol: " +String idToString(X), "6.9:3"))
+               "Redefinition of symbol: " +String idToString(X) +String ".", "6.9:3"))
                ~> updateLinkState(X:CId, _, Base':SymBase)
           ...</k>
           <external-defs>...
@@ -737,7 +720,7 @@ module C-DECL-GLOBAL
                andBool notBool (global(X, Tu) in_keys(Structs))
           [structural]
      rule <k> (.K => CV("TDG15",
-               "redefinition of a struct, union, or enum: " +String idToString(X), "6.7.2.3:1"))
+               "Redefinition of a struct, union, or enum: " +String idToString(X) +String ".", "6.7.2.3:1"))
                ~> addGlobalTag(X:CId, _)
           ...</k>
           <curr-tu> Tu:String </curr-tu>
@@ -817,10 +800,8 @@ module C-DECL-GLOBAL
           [structural]
 
      syntax KItem ::= giveCompositeType(CId, Type)
-     syntax KItem ::= "giveCompositeType'" "(" CId "," K ")"
      rule <k> giveCompositeType(X:CId, T':Type)
-               => giveCompositeType'(X, compositeType(T,
-                    stripStorageSpecifiers(T')))
+               => giveType(X, compositeType(T, stripStorageSpecifiers(T')))
           ...</k>
           <types>... X |-> T:Type ...</types>
           requires areCompatible(T, T')
@@ -832,19 +813,10 @@ module C-DECL-GLOBAL
           requires notBool (X in_keys(Types))
           [structural]
      rule <k> (.K => CV("TDG10",
-               "conflicting types for " +String idToString(X), "6.7:4"))
+               "Conflicting types for " +String idToString(X) +String ".", "6.7:4"))
                ~> giveCompositeType(X:CId, T':Type)
           ...</k>
           <types>... X |-> T:Type ...</types>
           requires notBool areCompatible(T, T')
-          [structural]
-
-     rule giveCompositeType'(X:CId, T:Type) => giveType(X, T)
-          [structural]
-     rule (.K => UNDEF("TDG17",
-               "could not form composite type from declaration.",
-               "6.2.7:3, J.2:1 item 16")) // Likely because of VLA params.
-          ~> giveCompositeType'(_, T:K)
-          requires isType(T) =/=K true
           [structural]
 endmodule

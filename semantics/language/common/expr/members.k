@@ -39,7 +39,7 @@ module C-COMMON-EXPR-MEMBERS
                orBool Initializing
           [structural]
      rule <k> (.K => UNDEF("CEM1",
-               "attempting to access a member in an atomic struct.",
+               "Attempting to access a member in an atomic struct.",
                "6.5.2.3:5, J.2:1 item 42"))
                ~> Lbl:KLabel(_, t(Mods:Set, structType(_))) . _:CId
           ...</k>
@@ -48,7 +48,7 @@ module C-COMMON-EXPR-MEMBERS
                andBool (#klabel(Lbl) ==K #klabel(`nclv`) orBool #klabel(Lbl) ==K #klabel(`ncle`))
           [structural]
      rule <k> (.K => UNDEF("CEM2",
-               "attempting to access a member in an atomic union.",
+               "Attempting to access a member in an atomic union.",
                "6.5.2.3:5, J.2:1 item 42"))
                ~> Lbl:KLabel(_, t(Mods:Set, unionType(_))) . _:CId
           ...</k>
@@ -56,19 +56,6 @@ module C-COMMON-EXPR-MEMBERS
           requires Atomic in Mods
                andBool (#klabel(Lbl) ==K #klabel(`nclv`) orBool #klabel(Lbl) ==K #klabel(`ncle`))
           [structural]
-     rule <k> (_:ErrorExit => .K) 
-              ~> Lbl:KLabel(_, t((SetItem(Atomic) => .Set) Mods:Set, structType(_))) . _:CId
-          ...</k>
-          <initializing> false </initializing>
-          requires (#klabel(Lbl) ==K #klabel(`nclv`) orBool #klabel(Lbl) ==K #klabel(`ncle`))
-              andBool isErrorRecovery
-     rule <k> (_:ErrorExit => .K) 
-              ~> Lbl:KLabel(_, t((SetItem(Atomic) => .Set) Mods:Set, unionType(_))) . _:CId
-          ...</k>
-          <initializing> false </initializing>
-          requires (#klabel(Lbl) ==K #klabel(`nclv`) orBool #klabel(Lbl) ==K #klabel(`ncle`))
-              andBool isErrorRecovery
-
 
      // The last two parameters are for convenience and should be the same.
      // TODO(chathhorn): anonymous structs/unions.
@@ -93,7 +80,7 @@ module C-COMMON-EXPR-MEMBERS
           => lookupFieldHold(F, Loc, Mods, S, Fields, fieldInfo(Decls, Size, Types, Offsets))
           requires notBool (F in_keys(Types) andBool F in_keys(Offsets))
 
-     rule (.K => CV("CEM3", "attempting to access member but it does not exist", "6.5.2.3:1"))
+     rule (.K => CV("CEM3", "Attempting to access member but it does not exist.", "6.5.2.3:1"))
           ~> lookupFieldHold(F:CId, _, _, _, _, fieldInfo(_, _, Types:Map, Offsets:Map))
 
      // Same deal as above, only for byte lists.

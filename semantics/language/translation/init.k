@@ -105,7 +105,7 @@ module C-TRANSLATION-INIT
                typedDeclaration(T, B),
                initializer(Computation(initFunction(
                     &(B), B,
-                    functionObject(B, .List, T, handleBuiltin)
+                    functionObject(B, T, handleBuiltin)
                )))) ...</k>
           <external-types>... B |-> _ ...</external-types>
           <external-uses>... SetItem(B) ...</external-uses>
@@ -182,10 +182,6 @@ module C-TRANSLATION-INIT
                _, X:CId |-> T:Type _,
                _, X |-> T':Type _)
           requires notBool areCompatible(T, T')
-     rule (_:ErrorExit => .K) ~> checkExtTypes((X:CId => .K), 
-               _, (X |-> T:Type) _,
-               _, (X |-> T':Type) _)
-          requires isErrorRecovery
 
      rule checkExtDefs((.K => X:CId), (SetItem(X:CId) => .Set) _, _)
      rule checkExtDefs((X:CId => .K), _, Defs':Set)
@@ -195,8 +191,6 @@ module C-TRANSLATION-INIT
                "Multiple external definitions for " +String idToString(X) +String ".",
                "6.9:5, J.2:1 item 84"))
           ~> checkExtDefs(X:CId, _, SetItem(X) _)
-     rule (_:ErrorExit => .K) ~> checkExtDefs((X:CId => .K), _, _)
-          requires isErrorRecovery 
 
      syntax K ::= mergeObj(K, K) [function]
      syntax Map ::= mergeDecls(Map, Map) [function]
